@@ -83,74 +83,17 @@ check_opensearch_health() {
     fi
 }
 
-print_status "Starting OpenSearch setup..."
+print_status "Starting OpenSearch setup using docker-compose..."
 
-# Create network if it doesn't exist
-if docker network ls | grep -q opensearch-net; then
-    print_warning "Network 'opensearch-net' already exists"
-else
-    print_status "Creating Docker network..."
-    docker network create opensearch-net
-    if [ $? -eq 0 ]; then
-        print_success "Network 'opensearch-net' created"
-    else
-        print_error "Failed to create network"
-        exit 1
-    fi
-fi
+# Start services using docker-compose
+print_status "Starting containers..."
+docker compose -f docker-compose.opensearch.yml up -d
 
-# Handle OpenSearch node container
-if container_exists "opensearch-node"; then
-    if container_running "opensearch-node"; then
-        print_warning "OpenSearch node container is already running"
-    else
-        print_status "Starting existing OpenSearch node container..."
-        docker start opensearch-node
-    fi
+if [ $? -eq 0 ]; then
+    print_success "Containers started successfully"
 else
-    print_status "Creating and starting OpenSearch node container..."
-    docker run -d \
-      --name opensearch-node \
-      --net opensearch-net \
-      -p 9200:9200 -p 9600:9600 \
-      -e "discovery.type=single-node" \
-      -e "bootstrap.memory_lock=true" \
-      -e "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m" \
-      -e "DISABLE_SECURITY_PLUGIN=true" \
-      opensearchproject/opensearch:2.11.0
-    
-    if [ $? -eq 0 ]; then
-        print_success "OpenSearch node container created and started"
-    else
-        print_error "Failed to create OpenSearch node container"
-        exit 1
-    fi
-fi
-
-# Handle OpenSearch Dashboards container
-if container_exists "opensearch-dashboards"; then
-    if container_running "opensearch-dashboards"; then
-        print_warning "OpenSearch Dashboards container is already running"
-    else
-        print_status "Starting existing OpenSearch Dashboards container..."
-        docker start opensearch-dashboards
-    fi
-else
-    print_status "Creating and starting OpenSearch Dashboards container..."
-    docker run -d \
-      --name opensearch-dashboards \
-      --net opensearch-net \
-      -p 5601:5601 \
-      -e "OPENSEARCH_HOSTS=http://opensearch-node:9200" \
-      -e "DISABLE_SECURITY_DASHBOARDS_PLUGIN=true" \
-      opensearchproject/opensearch-dashboards:2.11.0
-    
-    if [ $? -eq 0 ]; then
-        print_success "OpenSearch Dashboards container created and started"
-    else
-        print_error "Failed to create OpenSearch Dashboards container"
-        exit 1
-    fi
+    print_error "Failed to start containers with docker compose"
+    exit 1
 fi
 
 # Wait for OpenSearch to be ready
@@ -199,4 +142,4 @@ print_status "Access OpenSearch Dashboards at: http://localhost:5601"
 
 # Show container status
 print_status "Container status:"
-docker ps --filter "name=opensearch" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+docker compose -f docker-compose.opensearch.yml ps

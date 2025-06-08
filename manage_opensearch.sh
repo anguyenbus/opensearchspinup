@@ -127,18 +127,18 @@ show_logs() {
     case $choice in
         1)
             print_status "OpenSearch Node logs (last 50 lines):"
-            docker logs --tail 50 opensearch-node
+            docker compose -f docker-compose.opensearch.yml logs --tail 50 opensearch-node
             ;;
         2)
             print_status "OpenSearch Dashboards logs (last 50 lines):"
-            docker logs --tail 50 opensearch-dashboards
+            docker compose -f docker-compose.opensearch.yml logs --tail 50 opensearch-dashboards
             ;;
         3)
             print_status "OpenSearch Node logs (last 25 lines):"
-            docker logs --tail 25 opensearch-node
+            docker compose -f docker-compose.opensearch.yml logs --tail 25 opensearch-node
             echo ""
             print_status "OpenSearch Dashboards logs (last 25 lines):"
-            docker logs --tail 25 opensearch-dashboards
+            docker compose -f docker-compose.opensearch.yml logs --tail 25 opensearch-dashboards
             ;;
         *)
             print_error "Invalid choice"
@@ -155,16 +155,14 @@ start_containers() {
 # Function to stop containers
 stop_containers() {
     print_status "Stopping OpenSearch containers..."
-    docker stop opensearch-dashboards opensearch-node 2>/dev/null
+    docker compose -f docker-compose.opensearch.yml stop
     print_success "Containers stopped"
 }
 
 # Function to restart containers
 restart_containers() {
     print_status "Restarting OpenSearch containers..."
-    stop_containers
-    sleep 2
-    start_containers
+    docker compose -f docker-compose.opensearch.yml restart
 }
 
 # Function to clean up everything
@@ -173,14 +171,8 @@ clean_up() {
     read -p "Are you sure? (y/N): " confirm
     
     if [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]]; then
-        print_status "Stopping containers..."
-        docker stop opensearch-dashboards opensearch-node 2>/dev/null
-        
-        print_status "Removing containers..."
-        docker rm opensearch-dashboards opensearch-node 2>/dev/null
-        
-        print_status "Removing network..."
-        docker network rm opensearch-net 2>/dev/null
+        print_status "Removing containers and network..."
+        docker compose -f docker-compose.opensearch.yml down -v
         
         print_success "Cleanup complete"
     else

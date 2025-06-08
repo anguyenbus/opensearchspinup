@@ -1,11 +1,10 @@
-version: '3'
 services:
-  opensearch:
-    image: opensearchproject/opensearch:latest
-    container_name: opensearch
+  opensearch-node:
+    image: opensearchproject/opensearch:2.11.0
+    container_name: opensearch-node
     environment:
       - cluster.name=opensearch-cluster
-      - node.name=opensearch
+      - node.name=opensearch-node
       - discovery.type=single-node
       - plugins.security.disabled=true  # For local development only
       - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
@@ -25,14 +24,14 @@ services:
       - opensearch-net
       
   opensearch-dashboards:
-    image: opensearchproject/opensearch-dashboards:latest
+    image: opensearchproject/opensearch-dashboards:2.11.0
     container_name: opensearch-dashboards
     ports:
       - 5601:5601
     expose:
       - "5601"
     environment:
-      OPENSEARCH_HOSTS: '["http://opensearch:9200"]'
+      OPENSEARCH_HOSTS: '["http://opensearch-node:9200"]'
       DISABLE_SECURITY_DASHBOARDS_PLUGIN: "true"  # For local development only
     networks:
       - opensearch-net
@@ -41,4 +40,4 @@ volumes:
   opensearch-data:
 
 networks:
-  opensearch-net: 
+  opensearch-net:
